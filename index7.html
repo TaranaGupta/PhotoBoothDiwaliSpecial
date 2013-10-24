@@ -1,0 +1,841 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+    <title>Take a diwali picture with you friend</title>
+
+     <style type="text/css">
+      
+	    
+
+	      body {
+	        margin: 0;
+	        padding: 0;
+	        border: 0;
+	        overflow: hidden;
+	        height: 100%; 
+	        width:100%;
+	        width:100%;
+	      	background:url('http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/background.png');
+	      	background-size:100%;
+            background-repeat:no-repeat;
+	        display: block;
+	        font-family: Palatino, serif;
+	        font-style: italic;
+	        /*font-family: 'Helvetica Neue',Helvetica, sans-serif;*/
+
+	      }
+
+	      h1, h2, h3, h4, h5, h6, p {
+	      font-family: Palatino, serif;
+	      font-style: italic;
+	      font-weight: lighter;
+	      color: white;
+	      }
+
+	      h1 {font-size:48px; color: #555; border-bottom: 1px solid #ccc; }
+
+	      h2 {font-size:28px; font-style:normal; color:Black; }
+
+	      p {color: #121212; font-weight:normal; font-size:20px;}
+	      li {display: list-item; text-align: -webkit-match-parent;}
+	      ul {display: block;list-style-type: disc;
+				-webkit-margin-before: 1em;
+				-webkit-margin-after: 1em;
+				-webkit-margin-start: 0px;
+				-webkit-margin-end: 0px;
+					
+			}
+
+	        #booth{
+		        position: absolute;
+		        top: 0;
+		        bottom: 0; 
+		        right: 0;
+		        width:25%;
+		        /*width: 340px; Width of frame div*/
+		        height: 100%;
+		        /*overflow: hidden; /*Disable scrollbars. Set to "scroll" to enable*/
+		        overflow:hidden;
+		        background-color: rgba(255, 255, 255, 0.3); 
+		        padding:10px;
+	        }
+
+	          
+
+          canvas { 
+		        background-color: rgba(255, 255, 255, 0.5); 
+		        display: inline;
+		        text-align:center;
+           }
+
+           .booth canvas{
+           	text-align:center;
+           	width:100%;
+
+           }
+
+	      #boothimage{
+	      	padding:10px; 
+	      	
+	      	
+	      }
+	      #imagecanvas{
+	      	text-align:center;
+	      	width:100%;
+
+	      }
+
+
+
+	      #button{margin:15px; text-align:center;}
+
+
+	        #maincontent{
+	        	width:70%;
+		        top: 0;
+		        left: 0;
+		        bottom: 0;
+		        overflow: auto; 
+	        }
+
+	        .innertube{
+	           margin: 10px;
+
+	        }
+
+	        #interaction {
+					width:100%;
+					/*padding: 27px 30px 30px 30px;*/
+					margin: 20 640 30px auto;
+					background: 
+					rgba(27, 30, 33, 0.5 );
+					border: solid 1px rgba(255, 255, 255, 0.12);
+					border-width: 0 0 1px 0;
+					-webkit-border-radius: 6px;
+					-moz-border-radius: 6px;
+					border-radius: 6px;
+					position: relative;
+					overflow: hidden;
+					}
+
+
+	        #masks{
+	        	text-align:center;
+	        	
+	        }
+
+	        #text{
+	        	text-align:center;
+	        	padding-bottom:10px;
+
+	        }
+
+	        .thumbnails {
+				list-style: none;
+				margin: 0;
+				padding: 20px;
+				/*width: 100%;*/
+				overflow: hidden;
+				}
+
+
+	        .thumbnails li {
+				float: left;
+				list-style: none;
+				margin: 0 5px 0 0;
+				
+				}
+			#cavasdiv{
+        	margin:10px;
+            text-align:center;
+
+	        }
+
+	        #videoCanvas{
+	        
+	        }
+
+           #videoCanvas canvas {
+			    display: inline;
+			    
+			}
+
+         </style>
+
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="http://cdn.peerjs.com/0.3/peer.min.js"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/canvas2image.js" type="text/javascript"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/base64.js" type="text/javascript"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/pixastic.custom.js" type="text/javascript"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/jsfeat-min.js" type="text/javascript"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/frontalface.js" type="text/javascript"></script>
+		<script src="http://itp.nyu.edu/~tg1047/script_booth/compatibility.js" type="text/javascript"></script>
+		<script type="text/javascript">
+
+
+			// We'll use a global variable to hold on to our id from PeerJS
+			//alert("here");
+			var peer_id = null;
+			var my_stream = null;
+			var video = null;
+			var ovideoElement = null;
+			var peer = null;
+			var socket  = null;
+			var listOtherPeerIds = [];
+			var canvas = null;
+			var mainContext  = null;
+			var effect = null;
+			var myFace = null;
+			var otherFace = null;
+			//var thumbScale = 0.25;
+			var canvasScale = 3;
+			//var finalImgScale = 
+			var snapShotNum = 0;
+			var finalCanvas = null;
+			var picH = null;
+			var picMargin = null;
+			var enableEffects = false;
+			var videoSide = "left";
+			//
+		    var myX = 0;
+		    var otherX = 0;
+
+			
+			//face detection shit
+			//var gui,options,ctx,canvasWidth,canvasHeight;
+            var img_u8,work_canvas,work_ctx,ii_sum,ii_sqsum,ii_tilted; //,edg; //,ii_canny;
+            var classifier = jsfeat.haar.frontalface;
+            var face_canvas, face_ctx;
+
+			//alert("here");
+			var initWebRTC = function() {
+				//socket = io.connect('http://localhost:8080/');
+				socket = io.connect('http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/');
+
+				
+
+				// These help with cross-browser functionality
+				window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+				navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+				video = document.getElementById('thevideo');
+				
+				if (navigator.getUserMedia) {
+					// The video element on the page to display the webcam
+				    //video = document.getElementById('thevideo');
+					navigator.getUserMedia({video: true}, function(stream) {
+							my_stream = stream;
+							video.src = window.URL.createObjectURL(stream) || stream;
+							video.play();
+										// Register for an API Key:	http://peerjs.com/peerserver
+							peer = new Peer({key: 'wuj7m1v1esjug14i'});
+							//peer = new Peer({key: 'wuj7m1v1esjug14i'});
+
+							// Get an ID from the PeerJS server		
+							peer.on('open', function(id) {
+							  console.log('My peer ID is: ' + id);
+							  peer_id = id;
+							  socket.emit("peer_id",peer_id);
+							});
+							//receiving the video call on peer
+							peer.on('call', function(incoming_call) {
+								console.log("Got a call!");
+								incoming_call.answer(my_stream); // Answer the call with our stream from getUserMedia
+								incoming_call.on('stream', function(remoteStream) {  
+								    // we receive a getUserMedia stream from the remote caller
+									// And attach it to a video object
+									//var ovideoElement = document.getElementById('theothervideo');
+								ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+								//document.body.appendChild(ovideoElement);
+								ovideoElement.play();
+								});
+							});
+
+						}, 
+						function(error) {alert("Failure " + error.code);
+					});
+				}
+							
+				
+
+				//send peer id to server to be broadcasted (once on connection)
+				socket.on('connect', function() {
+					//console.log("Connected");
+					// When we connect, if we have a peer_id, send it out	
+					if (peer_id != null) {
+						//console.log("peer id is not null, sending it");
+						socket.emit("peer_id",peer_id);
+					}
+				});
+
+
+
+				//send per id every second to server so that it can broadcast it
+				setInterval(function(){sendPeerId();}, 1000);
+
+				// Receive other folks peer_ids
+				socket.on('peer_id', function (data) {
+					//console.log("received peer id:" + peer_id);
+					if((listOtherPeerIds.indexOf(data) < 0) && (peer != null) && (peer.key != '')){ //if ID is not already seen
+						console.log("new peer id:" + data);
+						listOtherPeerIds.push(data);
+						//console.log("Got a new peer: " + data);
+						// Call them with our stream, my_stream
+						console.log("Calling peer: " + data);						
+						var call = peer.call(data, my_stream);
+						// After they answer, we'll get a 'stream' event with their stream	
+						/*
+						call.on('stream', function(remoteStream) {
+							//console.log("Got remote stream");
+							var ovideoElement = document.getElementById('theothervideo');
+							ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+							
+						});
+						*/
+						//will call peer every 4 secs.
+						//setInterval(function(){reTryCalling();}, 4000);
+
+					}
+				});
+
+				socket.on("face_id", function(data){
+						console.log('My other side mask is:' + data);
+						//peer = new Peer({key: data});
+						otherFace = document.getElementById(data);
+				});
+
+
+				//display the final image when received from the server
+				socket.on('finalimage', function (data) {
+                    //console.log("Got image");
+					//document.getElementById('imagefile').src = data;
+					var img = new Image();
+
+					img.src = data;
+					//var finalCanvas = document.getElementById("boothimage");
+		            finalCxt = finalCanvas.getContext("2d");
+		            //finalCxt.drawImage(image, 0, 0,image.width,image.height,0,0,280,210);
+		            //finalCxt.drawImage(image,  0, 0,finalCanvas.width,finalCanvas.height);
+		            //var picW = finalCanvas.width;
+		            //var picHeight = 0.75*picWidth/2;
+		            //finalCxt.drawImage(image,  0, 0,finalCanvas.width, 0.75*finalCanvas.width/2.0); //maintaining 4:3 aspect ratio.
+		            finalCxt.drawImage(img,  0, snapShotNum*(picH + picMargin), finalCanvas.width, picH); //maintaining 4:3 aspect ratio.
+
+		            snapShotNum = (snapShotNum+1)%3;
+            	});
+
+
+				var ovideoElement = document.getElementById('theothervideo');
+
+				/*// Register for an API Key:	http://peerjs.com/peerserver
+				peer = new Peer({key: 'wuj7m1v1esjug14i'});
+				//peer = new Peer({key: 'wuj7m1v1esjug14i'});
+
+				// Get an ID from the PeerJS server		
+				peer.on('open', function(id) {
+				  console.log('My peer ID is: ' + id);
+				  peer_id = id;
+				  socket.emit("peer_id",peer_id);
+				});*/
+
+				/*
+				socket.on("peerkey", function(data){
+						console.log('My peer key is:' + data);
+						//peer = new Peer({key: data});
+						peer.key = data;
+
+						
+
+					
+						//receiving the video call on peer
+						peer.on('call', function(incoming_call) {
+							console.log("Got a call!");
+							incoming_call.answer(my_stream); // Answer the call with our stream from getUserMedia
+							incoming_call.on('stream', function(remoteStream) {  
+							    // we receive a getUserMedia stream from the remote caller
+								// And attach it to a video object
+								//var ovideoElement = document.getElementById('theothervideo');
+							ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+							//document.body.appendChild(ovideoElement);
+							ovideoElement.play();
+							});
+						});
+						
+
+				});
+				*/
+				
+				socket.on("videoside", function(data){
+						console.log('My video side is:' + data);
+						//peer = new Peer({key: data});
+						videoSide = data;
+				});
+
+
+				/*//receiving the video call on peer
+				peer.on('call', function(incoming_call) {
+					console.log("Got a call!");
+					incoming_call.answer(my_stream); // Answer the call with our stream from getUserMedia
+					incoming_call.on('stream', function(remoteStream) {  
+					    // we receive a getUserMedia stream from the remote caller
+						// And attach it to a video object
+						//var ovideoElement = document.getElementById('theothervideo');
+					ovideoElement.src = window.URL.createObjectURL(remoteStream) || remoteStream;
+					//document.body.appendChild(ovideoElement);
+					ovideoElement.play();
+					});
+				});*/
+				
+
+
+
+
+
+				canvas = document.getElementById('videoCanvas');
+			    mainContext = canvas.getContext('2d');
+			    canvas.addEventListener('click', changeFilter, false);
+
+
+			    //var thumbWidth = video.videoWidth;
+	            //var thumbHeight = video.videoHeight;
+	            //video.width = thumbScale*video.videoWidth;
+	            //video.height = thumbScale*video.videoHeight;
+	            video.width = 160;
+	            video.height = 120;
+	            //
+	            ovideoElement.width = 160;
+	            ovideoElement.height = 120;
+	            //var otherwidth = ovideoElement.width;
+	            //var otherheight = ovideoElement.height;
+	            //var otherwidth = video.width;
+	            //var otherheight = video.height;
+
+				//canvas width and height
+	            //canvas.width = 6*thumbWidth; //width*2+width; 
+	            //canvas.height= 3*thumbHeight; //height+height/2; 
+	            canvas.width = 2*canvasScale*video.width;
+	            canvas.height = canvasScale*video.height;
+
+	            finalCanvas = document.getElementById("boothimage");
+	            picH = 0.75*finalCanvas.width/2;
+	            picMargin = 0.2*picH;
+	            finalCanvas.height = 3*picH + 2*picMargin;
+
+	            //var w = canvas.width;
+	            //var h = canvas.height;				    
+	            //setup_jsfeat();
+	            //face detection shit
+				setup_jsfeat();
+				//compatibility.requestAnimationFrame(detectFaces);
+				//assigning default faces
+				myFace = document.getElementById("ram");
+				otherFace = document.getElementById("hanuman");
+
+
+				setInterval(function(){copyVideosToCanvas();}, 300);
+				//compatibility.requestAnimationFrame(copyVideosToCanvas);
+
+				var copyVideosToCanvas = function() {
+
+
+		                mainContext.fillStyle = "rgb(0,255,0)";
+		                mainContext.strokeStyle = "rgb(0,255,0)";
+
+		                //var myX = 0;
+		                //var otherX = canvas.width/2;
+		                myX = 0;
+		                otherX = canvas.width/2;
+		                if(videoSide === "right"){
+		                	myX = canvas.width/2;
+		                	otherX = 0;
+		                }
+
+	                    //mainContext.drawImage(video, 0, 0, video.width,video.height,0,0,w/2,h);
+	                    //mainContext.drawImage(video, 0,0,canvas.width/2, canvas.height);
+	                    mainContext.drawImage(video, myX,0,canvas.width/2, canvas.height);
+	                    
+					    //context1.drawImage(ovideoElement, 0, 0, -1*otherwidth/2,otherheight);
+					    //mainContext.drawImage(video, 0, 0,video.width,video.height,w/2,0,w/2,h);
+					    if(ovideoElement.src){
+					    	//mainContext.drawImage(ovideoElement, canvas.width/2,0,canvas.width/2,canvas.height);
+					    	mainContext.drawImage(ovideoElement, otherX,0,canvas.width/2,canvas.height);
+					    }
+					    //applying effects
+					    if (enableEffects && effect) {
+					       	var image = new Image();
+			                image.src = canvas.toDataURL("image/png");
+			                var newImage = Pixastic.process(image, effect, null);
+			                mainContext.drawImage(newImage, 0,0,canvas.width,canvas.height);
+			            }
+									
+						detectFaces();			
+						//compatibility.requestAnimationFrame(copyVideosToCanvas);			    
+				};
+
+				//face detection shit
+				//setup_jsfeat();
+				//compatibility.requestAnimationFrame(detectFaces);
+				//assigning default faces
+				//myFace = document.getElementById("ram");
+				//friendFace = document.getElementById("hanuman");
+				//setInterval(function(){detectFaces();}, 1000);
+
+       };
+
+
+
+   			//taking a snapshot of the video and displaying it in a picture.
+		    function snapshot() {
+				    var image = convertCanvasToImage();
+		            // Actions
+		            //var finalCanvas = document.getElementById("boothimage");
+		            finalCxt = finalCanvas.getContext("2d");
+		            //finalCxt.drawImage(image, 0, 0,image.width,image.height,0,0,280,210);
+		            //finalCxt.drawImage(image,  0, 0,finalCanvas.width,finalCanvas.height);
+		            //var picW = finalCanvas.width;
+		            //var picHeight = 0.75*picWidth/2;
+		            //finalCxt.drawImage(image,  0, 0,finalCanvas.width, 0.75*finalCanvas.width/2.0); //maintaining 4:3 aspect ratio.
+		            finalCxt.drawImage(image,  0, snapShotNum*(picH + picMargin), finalCanvas.width, picH); //maintaining 4:3 aspect ratio.
+
+		            snapShotNum = (snapShotNum+1)%3;
+
+		            sendSnapShot();
+
+        	};
+
+        	function sendSnapShot(){
+        		var imgUrl = canvas.toDataURL('image/webp', 1);
+        		socket.emit('finalimage', imgUrl);
+        	};
+
+            // Converts canvas to an image
+            function convertCanvasToImage() {
+	                var image = new Image();
+	                image.src = canvas.toDataURL("image/png");
+	                return image;
+            };
+		    
+		
+			function saveFinalImages(){
+            	var finalCanvas = document.getElementById("boothimage");
+            	Canvas2Image.saveAsPNG(finalCanvas); 
+            };
+
+
+
+		   //changing the filters on the video
+		    var idx = 0;
+		    /*
+		    var filters = ['grayscale', 'sepia', 'brightness', 'contrast', 'hue-rotate',
+		                   'hue-rotate2', 'saturate', 'invert', ''];
+		    */
+		   	var filters = [ 'sepia', 'contrast' ,'saturation', 'solarize', 'invert', 'desaturate', 'mosaic', 'emboss','noise' ,''];               
+
+		    /*               
+		    function changeFilter(e) {
+			      var el = e.target;
+			      el.className = '';
+			      var effect = filters[idx++ % filters.length]; // loop through filters.
+			      if (effect) {
+			        el.classList.add(effect);
+			      }
+		    }
+		    */
+
+			function changeFilter(e){
+				//var el = e.target;
+
+				effect = filters[idx++ % filters.length]; // loop through filters.
+				/*
+			    if (effect) {
+			        //el.classList.add(effect);
+			       	var image = new Image();
+	                image.src = canvas.toDataURL("image/png");
+	                var newImage = Pixastic.process(image, effect, null);
+	                mainContext.drawImage(newImage, 0,0,canvas.width,canvas.height);
+			    }
+			    */
+
+			}			
+
+			function setup_jsfeat() {
+                //canvasWidth  = canvas.width;
+                //canvasHeight = canvas.height;
+                //ctx = canvas.getContext('2d');
+
+                //ctx.fillStyle = "rgb(0,255,0)";
+                //ctx.strokeStyle = "rgb(0,255,0)";
+                //var max_work_size = 160;
+                //var scale = Math.min(max_work_size/canvas.width, max_work_size/canvas.height);
+                //var w = (canvas.width*scale)|0;
+                //var h = (canvas.height*scale)|0;
+
+                //var w = (canvas.width/2)/5;
+                var w = (canvas.width/2)/4;
+                var h = canvas.height/4;
+
+                img_u8 = new jsfeat.matrix_t(w, h, jsfeat.U8_t | jsfeat.C1_t);
+                edg = new jsfeat.matrix_t(w, h, jsfeat.U8_t | jsfeat.C1_t);
+                work_canvas = document.createElement('canvas');
+                work_canvas.width = w;
+                work_canvas.height = h;
+                work_ctx = work_canvas.getContext('2d');
+                ii_sum = new Int32Array((w+1)*(h+1));
+                ii_sqsum = new Int32Array((w+1)*(h+1));
+                ii_tilted = new Int32Array((w+1)*(h+1));
+                //ii_canny = new Int32Array((w+1)*(h+1));
+
+                //options = new demo_opt();
+                //gui = new dat.GUI();
+
+                //gui.add(options, 'min_scale', 1, 4).step(0.1);
+                //gui.add(options, 'scale_factor', 1.1, 2).step(0.025);
+                //gui.add(options, 'equalize_histogram');
+                //gui.add(options, 'use_canny');
+                //gui.add(options, 'edges_density', 0.01, 1.).step(0.005);
+
+                //stat.add("haar detector");
+                /*
+                face_canvas = document.createElement('canvas');
+                var face_img = document.getElementById('ram');
+                face_canvas.width = face_img.width;
+                face_canvas.height = face_img.height;
+                face_ctx = face_canvas.getContext('2d');
+                face_ctx.drawImage(face_img, 0, 0, face_canvas.width, face_canvas.height);
+				*/
+
+
+            }
+            
+            function detectFaces(){
+            	//var myImage = mainContext.getImageData(myX, 0, canvas.width/2, canvas.height);
+            	//var myImage = convertCanvasToImage();
+            	//detectFacesByImage(myImage, myFace, myX);
+            	//detectFacesByImage(myImage, myFace, 0);
+				//var otherImage = mainContext.getImageData(otherX, 0, canvas.width/2, canvas.height);
+				//detectFacesByImage(otherImage, otherFace, otherX);
+				/*
+				var myImageData = mainContext.getImageData(0, 0, canvas.width, canvas.height);
+				var newCanvas = document.createElement('canvas');
+				newCanvas.width = canvas.width;
+				newCanvas.height = canvas.height;
+				new_ctx = newCanvas.getContext('2d');
+				new_ctx.putImageData(myImageData, 0, 0, newCanvas.width, newCanvas.height);
+				var image = new Image();
+	            image.src = newCanvas.toDataURL("image/png");
+	            detectFacesByImage(myImage, myFace, 0);
+	            */
+	            detectFacesByImage(myFace, myX);
+	            detectFacesByImage(otherFace, otherX);
+			}
+
+			//function detectFacesByImage(sourceImg, faceImg, refX){
+			function detectFacesByImage(faceImg, refX){	
+
+				    //work_ctx.drawImage(sourceImg, 0, 0, work_canvas.width, work_canvas.height);
+				    work_ctx.drawImage(canvas, refX, 0, canvas.width/2, canvas.height, 0, 0, work_canvas.width, work_canvas.height);
+				    //work_ctx.putImageData(sourceImg, 0, 0, work_canvas.width, work_canvas.height);
+                    var imageData = work_ctx.getImageData(0, 0, work_canvas.width, work_canvas.height);
+
+                    jsfeat.imgproc.grayscale(imageData.data, img_u8.data);
+                    jsfeat.imgproc.compute_integral_image(img_u8, ii_sum, ii_sqsum, classifier.tilted ? ii_tilted : null);
+                    jsfeat.haar.edges_density = 0.13; //options.edges_density;
+                    var rects = jsfeat.haar.detect_multi_scale(ii_sum, ii_sqsum, ii_tilted, null, img_u8.cols, img_u8.rows, classifier, 1.15, 2);
+                    rects = jsfeat.haar.group_rectangles(rects, 1);
+
+                    draw_faces(rects, 4, 2, faceImg, refX);
+
+			}
+
+		    function draw_faces(rects, sc, max, faceImg, refX) {
+                var on = rects.length;
+                if(on && max) {
+                    jsfeat.math.qsort(rects, 0, on-1, function(a,b){return (b.confidence<a.confidence);})
+                }
+                var n = max || on;
+                n = Math.min(n, on);
+                var r;
+                for(var i = 0; i < n; ++i) {
+                    r = rects[i];
+                    //mainContext.strokeRect((r.x*sc)|0,(r.y*sc)|0,(r.width*sc)|0,(r.height*sc)|0);
+                    //var faceImage = document.getElementById("ravan");
+                    //var faceImage = convertCanvasToImage();
+
+                   	//var image = new Image();
+	                //image.src = face_canvas.toDataURL("image/png");
+                    //mainContext.drawImage(myFace,(r.x*sc)|0,0.6*(r.y*sc)|0,(r.width*sc)|0,1.5*(r.height*sc)|0);
+                    mainContext.drawImage(faceImg, refX+(r.x*sc)|0, 0.6*(r.y*sc)|0, (r.width*sc)|0, 1.5*(r.height*sc)|0);
+                    //mainContext.drawImage(faceImage,(r.x*sc)|0,(r.y*sc)|0);
+                }
+            }
+			
+            /*
+			function detectFaces() {
+                //compatibility.requestAnimationFrame(detectFaces);
+                //stat.new_frame();
+                //if (video.readyState === video.HAVE_ENOUGH_DATA) {
+
+                    //ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+                    var boothImage = convertCanvasToImage();
+                    work_ctx.drawImage(boothImage, 0, 0, work_canvas.width, work_canvas.height);
+                    var imageData = work_ctx.getImageData(0, 0, work_canvas.width, work_canvas.height);
+
+                    //tat.start("haar detector");
+                    
+                    jsfeat.imgproc.grayscale(imageData.data, img_u8.data);
+
+                    // possible options
+                    //if(options.equalize_histogram) {
+                    //    jsfeat.imgproc.equalize_histogram(img_u8, img_u8);
+                    //}
+                    //jsfeat.imgproc.gaussian_blur(img_u8, img_u8, 3);
+
+                    jsfeat.imgproc.compute_integral_image(img_u8, ii_sum, ii_sqsum, classifier.tilted ? ii_tilted : null);
+
+                    //if(options.use_canny) {
+                    //    jsfeat.imgproc.canny(img_u8, edg, 10, 50);
+                    //    jsfeat.imgproc.compute_integral_image(edg, ii_canny, null, null);
+                    //}
+
+                    jsfeat.haar.edges_density = 0.13; //options.edges_density;
+                    var rects = jsfeat.haar.detect_multi_scale(ii_sum, ii_sqsum, ii_tilted, null, img_u8.cols, img_u8.rows, classifier, 1.15, 2);
+                    rects = jsfeat.haar.group_rectangles(rects, 1);
+
+                    //stat.stop("haar detector");
+
+                    // draw only most confident one
+                    //draw_faces(rects, canvas.width/img_u8.cols, 1);
+                    draw_faces(rects, 4, 2);
+
+                    //$('#log').html(stat.log());
+                //}
+            }
+
+
+            function draw_faces(rects, sc, max) {
+                var on = rects.length;
+                if(on && max) {
+                    jsfeat.math.qsort(rects, 0, on-1, function(a,b){return (b.confidence<a.confidence);})
+                }
+                var n = max || on;
+                n = Math.min(n, on);
+                var r;
+                for(var i = 0; i < n; ++i) {
+                    r = rects[i];
+                    //mainContext.strokeRect((r.x*sc)|0,(r.y*sc)|0,(r.width*sc)|0,(r.height*sc)|0);
+                    //var faceImage = document.getElementById("ravan");
+                    //var faceImage = convertCanvasToImage();
+
+                   	//var image = new Image();
+	                //image.src = face_canvas.toDataURL("image/png");
+                    mainContext.drawImage(myFace,(r.x*sc)|0,0.6*(r.y*sc)|0,(r.width*sc)|0,1.5*(r.height*sc)|0);
+                    //mainContext.drawImage(faceImage,(r.x*sc)|0,(r.y*sc)|0);
+                }
+            }
+			*/
+
+
+			var sendPeerId = function(){
+				if (peer_id != null) {
+					//console.log("peer id is not null, sending it:" + peer_id);
+					socket.emit("peer_id",peer_id);
+				}
+			};
+
+			//re-try calling all the peers
+			var reTryCalling = function(){
+
+				for(var p in listOtherPeerIds){
+					peer.call(p, my_stream);
+				}
+			}
+
+              //audio button script
+			 function playMusic() {
+
+			    var yourAudio = document.getElementById('yourAudio');
+			    var ctrlButton = document.getElementById('audioControlImage');
+			    //alert(ctrlButton.image.src);
+
+			    // Update the Button
+			   // ctrlButton.innerHTML = (ctrlButton.innerHTML === 'pause') ? 'play' : 'pause';
+			    ctrlButton.src= (ctrlButton.src === 'http://itp.nyu.edu/~tg1047/image_photoBooth/pause.png') ? 'http://itp.nyu.edu/~tg1047/image_photoBooth/play.png' : 'http://itp.nyu.edu/~tg1047/image_photoBooth/pause.png';
+			    /*
+			    if(ctrl.innerHTML === 'pause!'){ctrl.innerHTML = "play!";}
+			    else{trl.innerHTML = "play!";}
+			    */
+
+			    (ctrlButton.src === 'http://itp.nyu.edu/~tg1047/image_photoBooth/pause.png')? yourAudio.play() : yourAudio.pause();
+			    /*
+			    if(ctrl.innerHTML === 'pause!'){yourAudio.play();}
+			    else{yourAudio.pause();}
+			    */
+
+			    // Prevent Default Action
+			    return false;
+			}
+
+			function selectFace(imgObj){
+				var faceImg = new Image();
+				faceImg.src = imgObj.src;
+				myFace = faceImg;
+				//send a msg to sever about which face we have selected. 
+
+				socket.emit("face_id", imgObj.id);
+
+			}
+
+		</script>
+
+	</head>
+	  <body onload='initWebRTC();'>
+		 <div id="container" width="100%">
+
+			      <div id="booth" class="boothinner" >
+				      	<div id="imagecanvas" width="100%">
+				      	    <canvas id="boothimage"></canvas>
+				        </div>
+				        <div id="button">
+				             <button value='SaveImage' onclick='saveFinalImages()'>Save Image</button>
+				        </div>
+			      </div>
+
+
+			      <div id="maincontent" class="innertube">
+				          <div>
+					           <div>
+					           	<img style="padding:0px 20px 0px 0px" src="http://itp.nyu.edu/~tg1047/image_photoBooth/logobooth.png" alt="Photo Booth" width="40%"/>
+					                <!--<audio id="yourAudio"><source src='http://itp.nyu.edu/~tg1047/image_photoBooth/Sanaya Irani Dance on Radha song.mp3' type='audio/mpeg'/></audio>
+					                <button id = "audioControl" onclick='playMusic()'> 
+					                <image id="audioControlImage" src="http://itp.nyu.edu/~tg1047/image_photoBooth/pause.png" width="25px"/>
+					                </button>-->
+					                <!--a href="#" id="audioControl">play!</a-->
+					                
+					                <video style="padding:0px 10px 0px 10px" id="thevideo" autoplay></video>
+									<video style="padding:0px 10px 0px 10px" id="theothervideo" autoplay></video>
+				              </div>
+
+				              <div id="interaction">
+						               <ul id="masks" class="thumbnails" width="100%">
+						              	<li><img id = "ram" src="http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/ram.png" alt="Photo Booth" width="30%" onclick= 'selectFace(this)'></li>
+						              	<li><img id = "sita" src="http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/sita.png" alt="Photo Booth" width="30%" onclick= 'selectFace(this)'></li>
+						              	<li><img id = "hanuman" src="http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/hanuman.png" alt="Photo Booth" width="30%" onclick= 'selectFace(this)'></li>
+						                <li><img id = "ravan" src="http://ec2-54-200-29-161.us-west-2.compute.amazonaws.com:8080/ravan.png" alt="Photo Booth" width="30%" onclick= 'selectFace(this)'></li>
+						                </ul>
+
+				                        <div id="cavasdiv"> 
+				                       	 <canvas id="videoCanvas">
+						                 </canvas>
+						                </div>
+
+							             <div id="text">
+							                 <h3>Click on the video to change effects</h3>
+							              	<button value='Capture' onclick='snapshot()'>Capture</button>
+							             </div>
+							    </div>
+					      </div>
+                  </div>
+       </div>
+	</body>
+</html>
+
